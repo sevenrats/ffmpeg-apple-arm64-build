@@ -35,7 +35,8 @@ download_code() {
 
   # download source
   #curl -O -L https://github.com/videolan/x265/archive/$5.tar.gz
-  git clone https://github.com/videolan/x265.git
+  #git clone https://github.com/videolan/x265.git
+  git clone https://bitbucket.org/multicoreware/x265_git.git
   checkStatus $? "download of x265 failed"
 
   # TODO: checksum validation (if available)
@@ -48,18 +49,20 @@ download_code() {
 
 configure_build () {
 
-  cd "$2/x265/x265"
+   
+  cd "$2/x265/x265_git"
   checkStatus $? "change directory failed"
 
 
   #patch for arm64 / neon recognition
-  patch -p1 < $1/apple_arm64_x265.patch
+  #patch -p1 < $1/apple_arm64_x265.patch
+  patch -p1 < $1/x265_quant.patch
 
   cd ../12bit
 
   # prepare build
 
-  cmake -DCMAKE_INSTALL_PREFIX:PATH=$3 -DENABLE_SHARED=NO -DHIGH_BIT_DEPTH=ON -DEXPORT_C_API=OFF -DENABLE_CLI=OFF -DMAIN12=ON ../x265/source
+  cmake -DCMAKE_INSTALL_PREFIX:PATH=$3 -DENABLE_SHARED=NO -DHIGH_BIT_DEPTH=ON -DEXPORT_C_API=OFF -DENABLE_CLI=OFF -DMAIN12=ON ../x265_git/source
   #cmake -DCMAKE_INSTALL_PREFIX:PATH=$3 -DENABLE_SHARED=NO source
   checkStatus $? "configuration of 12bit x265 failed"
 
@@ -67,7 +70,7 @@ configure_build () {
 
   # prepare build
 
-  cmake -DCMAKE_INSTALL_PREFIX:PATH=$3 -DENABLE_SHARED=NO -DHIGH_BIT_DEPTH=ON -DMAIN10=ON -DEXPORT_C_API=OFF -DENABLE_CLI=OFF ../x265/source
+  cmake -DCMAKE_INSTALL_PREFIX:PATH=$3 -DENABLE_SHARED=NO -DHIGH_BIT_DEPTH=ON -DMAIN10=ON -DEXPORT_C_API=OFF -DENABLE_CLI=OFF ../x265_git/source
   #cmake -DCMAKE_INSTALL_PREFIX:PATH=$3 -DENABLE_SHARED=NO source
   checkStatus $? "configuration of 10bit x265 failed"
 
@@ -75,7 +78,7 @@ configure_build () {
 
   # prepare build
 
-  cmake -DCMAKE_INSTALL_PREFIX:PATH=$3 -DENABLE_SHARED=NO -DEXTRA_LIB="x265_main10.a;x265_main12.a" -DEXTRA_LINK_FLAGS=-L. -DLINKED_10BIT=ON -DLINKED_12BIT=ON -DENABLE_CLI=NO ../x265/source
+  cmake -DCMAKE_INSTALL_PREFIX:PATH=$3 -DENABLE_SHARED=NO -DEXTRA_LIB="x265_main10.a;x265_main12.a" -DEXTRA_LINK_FLAGS=-L. -DLINKED_10BIT=ON -DLINKED_12BIT=ON -DENABLE_CLI=NO ../x265_git/source
   #cmake -DCMAKE_INSTALL_PREFIX:PATH=$3 -DENABLE_SHARED=NO source
   checkStatus $? "configuration of 8bit x265 failed"
 

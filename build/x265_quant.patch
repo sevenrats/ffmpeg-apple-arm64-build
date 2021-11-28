@@ -1,0 +1,46 @@
+diff -ruN x265_git/source/common/aarch64/asm-primitives.cpp x265_git_final/source/common/aarch64/asm-primitives.cpp
+--- x265_git/source/common/aarch64/asm-primitives.cpp	2021-11-02 15:15:24.000000000 +0000
++++ x265_git_final/source/common/aarch64/asm-primitives.cpp	2021-11-02 14:46:20.000000000 +0000
+@@ -109,10 +109,10 @@
+ {
+     if (cpuMask & X265_CPU_NEON)
+     {
+-    	  // quant
++#if !HIGH_BIT_DEPTH
++    	// quant
+         p.quant = PFX(quant_neon);
+         
+-#if !HIGH_BIT_DEPTH
+         p.pu[LUMA_4x8].satd   = PFX(pixel_satd_4x8_neon);
+         p.pu[LUMA_4x16].satd  = PFX(pixel_satd_4x16_neon);
+ 
+diff -ruN x265_git/source/common/version.cpp x265_git_final/source/common/version.cpp
+--- x265_git/source/common/version.cpp	2021-11-02 15:15:24.000000000 +0000
++++ x265_git_final/source/common/version.cpp	2021-11-02 15:12:38.000000000 +0000
+@@ -31,7 +31,7 @@
+ 
+ #if defined(__clang__)
+ #define COMPILEDBY  "[clang " XSTR(__clang_major__) "." XSTR(__clang_minor__) "." XSTR(__clang_patchlevel__) "]"
+-#ifdef __IA64__
++#if defined(__IA64__) || defined(__arm64__) || defined(__aarch64__)
+ #define ONARCH    "[on 64-bit] "
+ #else
+ #define ONARCH    "[on 32-bit] "
+@@ -40,7 +40,7 @@
+ 
+ #if defined(__GNUC__) && !defined(__INTEL_COMPILER) && !defined(__clang__)
+ #define COMPILEDBY  "[GCC " XSTR(__GNUC__) "." XSTR(__GNUC_MINOR__) "." XSTR(__GNUC_PATCHLEVEL__) "]"
+-#ifdef __IA64__
++#if defined(__IA64__) || defined(__arm64__) || defined(__aarch64__)
+ #define ONARCH    "[on 64-bit] "
+ #else
+ #define ONARCH    "[on 32-bit] "
+@@ -71,7 +71,7 @@
+ #define ONOS    "[Unk-OS]"
+ #endif
+ 
+-#if X86_64
++#if X86_64  || __arm64__ || __aarch64__
+ #define BITS    "[64 bit]"
+ #else
+ #define BITS    "[32 bit]"
