@@ -1,22 +1,172 @@
-diff -ruN x265_git/source/common/aarch64/asm-primitives.cpp x265_git_final/source/common/aarch64/asm-primitives.cpp
---- x265_git/source/common/aarch64/asm-primitives.cpp	2021-11-02 15:15:24.000000000 +0000
-+++ x265_git_final/source/common/aarch64/asm-primitives.cpp	2021-11-02 14:46:20.000000000 +0000
-@@ -109,10 +109,10 @@
- {
-     if (cpuMask & X265_CPU_NEON)
-     {
--    	  // quant
-+#if !HIGH_BIT_DEPTH
-+    	// quant
-         p.quant = PFX(quant_neon);
-         
--#if !HIGH_BIT_DEPTH
-         p.pu[LUMA_4x8].satd   = PFX(pixel_satd_4x8_neon);
-         p.pu[LUMA_4x16].satd  = PFX(pixel_satd_4x16_neon);
+diff -ruN x265_git/source/CMakeLists.txt x265_git_quant/source/CMakeLists.txt
+--- x265_git/source/CMakeLists.txt	2021-12-04 15:16:15.000000000 +0000
++++ x265_git_quant/source/CMakeLists.txt	2021-12-04 15:36:31.000000000 +0000
+@@ -447,6 +447,18 @@
+ endif()
+ add_definitions(-DX265_NS=${X265_NS})
  
-diff -ruN x265_git/source/common/version.cpp x265_git_final/source/common/version.cpp
---- x265_git/source/common/version.cpp	2021-11-02 15:15:24.000000000 +0000
-+++ x265_git_final/source/common/version.cpp	2021-11-02 15:12:38.000000000 +0000
++if(ARM64)
++  if(HIGH_BIT_DEPTH)
++    if(MAIN12)
++      list(APPEND ASM_FLAGS -DHIGH_BIT_DEPTH=1 -DBIT_DEPTH=12 -DX265_NS=${X265_NS})
++    else()
++      list(APPEND ASM_FLAGS -DHIGH_BIT_DEPTH=1 -DBIT_DEPTH=10 -DX265_NS=${X265_NS})
++    endif()
++  else()
++    list(APPEND ASM_FLAGS -DHIGH_BIT_DEPTH=0 -DBIT_DEPTH=8 -DX265_NS=${X265_NS})
++  endif()
++endif(ARM64)
++
+ option(WARNINGS_AS_ERRORS "Stop compiles on first warning" OFF)
+ if(WARNINGS_AS_ERRORS)
+     if(GCC)
+@@ -562,7 +574,7 @@
+             add_custom_command(
+                 OUTPUT ${ASM}.${SUFFIX}
+                 COMMAND ${CMAKE_CXX_COMPILER}
+-                ARGS ${ARM_ARGS} -c ${ASM_SRC} -o ${ASM}.${SUFFIX}
++                ARGS ${ARM_ARGS} ${ASM_FLAGS} -c ${ASM_SRC} -o ${ASM}.${SUFFIX}
+                 DEPENDS ${ASM_SRC})
+         endforeach()
+     elseif(X86)
+diff -ruN x265_git/source/common/aarch64/asm.S x265_git_quant/source/common/aarch64/asm.S
+--- x265_git/source/common/aarch64/asm.S	2021-12-04 15:16:15.000000000 +0000
++++ x265_git_quant/source/common/aarch64/asm.S	2021-12-04 15:21:57.000000000 +0000
+@@ -23,6 +23,10 @@
+ 
+ .arch           armv8-a
+ 
++#define PFX3(prefix, name) prefix ## _ ## name
++#define PFX2(prefix, name) PFX3(prefix, name)
++#define PFX(name)          PFX2(X265_NS, name)
++
+ #ifdef __APPLE__
+ #define PREFIX 1
+ #endif
+diff -ruN x265_git/source/common/aarch64/pixel-util.S x265_git_quant/source/common/aarch64/pixel-util.S
+--- x265_git/source/common/aarch64/pixel-util.S	2021-12-04 15:16:15.000000000 +0000
++++ x265_git_quant/source/common/aarch64/pixel-util.S	2021-12-04 15:47:53.000000000 +0000
+@@ -93,7 +93,7 @@
+ 
+ // template<int w, int h>
+ // int satd4(const pixel* pix1, intptr_t stride_pix1, const pixel* pix2, intptr_t stride_pix2)
+-function x265_pixel_satd_4x8_neon
++function PFX(pixel_satd_4x8_neon)
+     pixel_satd_4x8_neon
+     mov               w0, v0.s[0]
+     ret
+@@ -101,7 +101,7 @@
+ 
+ // template<int w, int h>
+ // int satd4(const pixel* pix1, intptr_t stride_pix1, const pixel* pix2, intptr_t stride_pix2)
+-function x265_pixel_satd_4x16_neon
++function PFX(pixel_satd_4x16_neon)
+     eor             w4, w4, w4
+     pixel_satd_4x8_neon
+     mov               w5, v0.s[0]
+@@ -114,7 +114,7 @@
+ 
+ // template<int w, int h>
+ // int satd4(const pixel* pix1, intptr_t stride_pix1, const pixel* pix2, intptr_t stride_pix2)
+-function x265_pixel_satd_4x32_neon
++function PFX(pixel_satd_4x32_neon)
+     eor             w4, w4, w4
+ .rept 4
+     pixel_satd_4x8_neon
+@@ -127,7 +127,7 @@
+ 
+ // template<int w, int h>
+ // int satd4(const pixel* pix1, intptr_t stride_pix1, const pixel* pix2, intptr_t stride_pix2)
+-function x265_pixel_satd_12x16_neon
++function PFX(pixel_satd_12x16_neon)
+     mov             x4, x0
+     mov             x5, x2
+     eor             w7, w7, w7
+@@ -160,7 +160,7 @@
+ 
+ // template<int w, int h>
+ // int satd4(const pixel* pix1, intptr_t stride_pix1, const pixel* pix2, intptr_t stride_pix2)
+-function x265_pixel_satd_12x32_neon
++function PFX(pixel_satd_12x32_neon)
+     mov             x4, x0
+     mov             x5, x2
+     eor             w7, w7, w7
+@@ -192,7 +192,7 @@
+ 
+ // template<int w, int h>
+ // int satd4(const pixel* pix1, intptr_t stride_pix1, const pixel* pix2, intptr_t stride_pix2)
+-function x265_pixel_satd_8x8_neon
++function PFX(pixel_satd_8x8_neon)
+     eor             w4, w4, w4
+     mov             x6, x0
+     mov             x7, x2
+@@ -208,7 +208,7 @@
+ endfunc
+ 
+ // int psyCost_pp(const pixel* source, intptr_t sstride, const pixel* recon, intptr_t rstride)
+-function x265_psyCost_4x4_neon
++function PFX(psyCost_4x4_neon)
+     ld1r            {v4.2s}, [x0], x1
+     ld1r            {v5.2s}, [x0], x1
+     ld1             {v4.s}[1], [x0], x1
+@@ -290,7 +290,7 @@
+ endfunc
+ 
+ // uint32_t quant_c(const int16_t* coef, const int32_t* quantCoeff, int32_t* deltaU, int16_t* qCoef, int qBits, int add, int numCoeff)
+-function x265_quant_neon
++function PFX(quant_neon)
+     mov             w9, #1
+     lsl             w9, w9, w4
+     dup             v0.2s, w9
+@@ -402,14 +402,14 @@
+ .endm
+ 
+ // int satd_4x4(const pixel* pix1, intptr_t stride_pix1, const pixel* pix2, intptr_t stride_pix2)
+-function x265_pixel_satd_4x4_neon
++function PFX(pixel_satd_4x4_neon)
+     satd_4x4_neon
+     umov            x0, v0.d[0]
+     ret
+ endfunc
+ 
+ // int satd_8x4(const pixel* pix1, intptr_t stride_pix1, const pixel* pix2, intptr_t stride_pix2)
+-function x265_pixel_satd_8x4_neon
++function PFX(pixel_satd_8x4_neon)
+     mov             x4, x0
+     mov             x5, x2
+     satd_4x4_neon
+diff -ruN x265_git/source/common/aarch64/pixel-util.h x265_git_quant/source/common/aarch64/pixel-util.h
+--- x265_git/source/common/aarch64/pixel-util.h	2021-12-04 15:16:15.000000000 +0000
++++ x265_git_quant/source/common/aarch64/pixel-util.h	2021-12-04 15:55:16.000000000 +0000
+@@ -25,16 +25,16 @@
+ #ifndef X265_PIXEL_UTIL_AARCH64_H
+ #define X265_PIXEL_UTIL_AARCH64_H
+ 
+-int x265_pixel_satd_4x4_neon(const pixel *pix1, intptr_t stride_pix1, const pixel *pix2, intptr_t stride_pix2);
+-int x265_pixel_satd_4x8_neon(const pixel *pix1, intptr_t stride_pix1, const pixel *pix2, intptr_t stride_pix2);
+-int x265_pixel_satd_4x16_neon(const pixel *pix1, intptr_t stride_pix1, const pixel *pix2, intptr_t stride_pix2);
+-int x265_pixel_satd_4x32_neon(const pixel *pix1, intptr_t stride_pix1, const pixel *pix2, intptr_t stride_pix2);
+-int x265_pixel_satd_8x4_neon(const pixel *pix1, intptr_t stride_pix1, const pixel *pix2, intptr_t stride_pix2);
+-int x265_pixel_satd_8x8_neon(const pixel *pix1, intptr_t stride_pix1, const pixel *pix2, intptr_t stride_pix2);
+-int x265_pixel_satd_12x16_neon(const pixel *pix1, intptr_t stride_pix1, const pixel *pix2, intptr_t stride_pix2);
+-int x265_pixel_satd_12x32_neon(const pixel *pix1, intptr_t stride_pix1, const pixel *pix2, intptr_t stride_pix2);
++int PFX(pixel_satd_4x4_neon)(const pixel *pix1, intptr_t stride_pix1, const pixel *pix2, intptr_t stride_pix2);
++int PFX(pixel_satd_4x8_neon)(const pixel *pix1, intptr_t stride_pix1, const pixel *pix2, intptr_t stride_pix2);
++int PFX(pixel_satd_4x16_neon)(const pixel *pix1, intptr_t stride_pix1, const pixel *pix2, intptr_t stride_pix2);
++int PFX(pixel_satd_4x32_neon)(const pixel *pix1, intptr_t stride_pix1, const pixel *pix2, intptr_t stride_pix2);
++int PFX(pixel_satd_8x4_neon)(const pixel *pix1, intptr_t stride_pix1, const pixel *pix2, intptr_t stride_pix2);
++int PFX(pixel_satd_8x8_neon)(const pixel *pix1, intptr_t stride_pix1, const pixel *pix2, intptr_t stride_pix2);
++int PFX(pixel_satd_12x16_neon)(const pixel *pix1, intptr_t stride_pix1, const pixel *pix2, intptr_t stride_pix2);
++int PFX(pixel_satd_12x32_neon)(const pixel *pix1, intptr_t stride_pix1, const pixel *pix2, intptr_t stride_pix2);
+ 
+-uint32_t x265_quant_neon(const int16_t *coef, const int32_t *quantCoeff, int32_t *deltaU, int16_t *qCoef, int qBits,
++uint32_t PFX(quant_neon)(const int16_t *coef, const int32_t *quantCoeff, int32_t *deltaU, int16_t *qCoef, int qBits,
+                          int add, int numCoeff);
+ int PFX(psyCost_4x4_neon)(const pixel *source, intptr_t sstride, const pixel *recon, intptr_t rstride);
+ 
+diff -ruN x265_git/source/common/version.cpp x265_git_quant/source/common/version.cpp
+--- x265_git/source/common/version.cpp	2021-12-04 15:16:15.000000000 +0000
++++ x265_git_quant/source/common/version.cpp	2021-12-04 16:09:30.000000000 +0000
 @@ -31,7 +31,7 @@
  
  #if defined(__clang__)
@@ -31,7 +181,7 @@ diff -ruN x265_git/source/common/version.cpp x265_git_final/source/common/versio
  #if defined(__GNUC__) && !defined(__INTEL_COMPILER) && !defined(__clang__)
  #define COMPILEDBY  "[GCC " XSTR(__GNUC__) "." XSTR(__GNUC_MINOR__) "." XSTR(__GNUC_PATCHLEVEL__) "]"
 -#ifdef __IA64__
-+#if defined(__IA64__) || defined(__arm64__) || defined(__aarch64__)
++#if defined(__IA64__) || defined(__arm64__) || defined(__aarch64__
  #define ONARCH    "[on 64-bit] "
  #else
  #define ONARCH    "[on 32-bit] "
