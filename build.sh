@@ -2,6 +2,7 @@
 
 # Option feature set to FALSE if not rewuired and TRUE if required
 ENABLE_FFPLAY=FALSE
+ENABLE_TOPAZ=TRUE
 
 ENABLE_TOPAZ=TRUE
 ENABLE_AVISYNTHPLUS=TRUE
