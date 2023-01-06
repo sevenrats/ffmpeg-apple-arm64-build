@@ -41,11 +41,7 @@ configure_build () {
   cd "$2/${SOFTWARE}/build-${SOFTWARE}/"
   checkStatus $? "change directory failed"
   
-<<<<<<< Updated upstream
   cmake -DCMAKE_INSTALL_PREFIX:PATH=$3 -DINSTALL_PKGCONFIG_DIR=$3/lib/pkgconfig -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF ../${SOFTWARE}
-=======
-  cmake -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX:PATH=$3 -DINSTALL_PKGCONFIG_DIR=$3/lib/pkgconfig -DCMAKE_BUILD_TYPE=Release ../${SOFTWARE}
->>>>>>> Stashed changes
   checkStatus $? "configuration of ${SOFTWARE} failed"
 
 }
