@@ -133,7 +133,7 @@ echoDurationInSections $START_TIME
 
 START_TIME=$(currentTimeInSeconds)
 echoSection "compile x265"
-$SCRIPT_DIR/build-x265.sh "$SCRIPT_DIR" "$WORKING_DIR" "$TOOL_DIR" "$CPUS" "3.4" > "$WORKING_DIR/build-x265.log" 2>&1
+$SCRIPT_DIR/build-x265_pfx.sh "$SCRIPT_DIR" "$WORKING_DIR" "$TOOL_DIR" "$CPUS" "3.4" > "$WORKING_DIR/build-x265.log" 2>&1
 checkStatus $? "build x265"
 echoDurationInSections $START_TIME
 
@@ -193,7 +193,7 @@ echoDurationInSections $START_TIME
 
 START_TIME=$(currentTimeInSeconds)
 echoSection "compile ffmpeg"
-$SCRIPT_DIR/build-ffmpeg.sh "$SCRIPT_DIR" "$WORKING_DIR" "$TOOL_DIR" "$OUT_DIR" "$CPUS" "5.0" > "$WORKING_DIR/build-ffmpeg.log" 2>&1
+$SCRIPT_DIR/build-ffmpeg.sh "$SCRIPT_DIR" "$WORKING_DIR" "$TOOL_DIR" "$OUT_DIR" "$CPUS" "5.1.2" > "$WORKING_DIR/build-ffmpeg.log" 2>&1
 checkStatus $? "build ffmpeg"
 echoDurationInSections $START_TIME
 
