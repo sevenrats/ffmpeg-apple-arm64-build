@@ -1,19 +1,22 @@
 diff --git a/source/common/aarch64/asm.S b/source/common/aarch64/asm.S
-index 399c37cf2..b81fb254e 100644
+index 399c37cf2..b9f5b2d30 100644
 --- a/source/common/aarch64/asm.S
 +++ b/source/common/aarch64/asm.S
-@@ -28,6 +28,11 @@
+@@ -28,8 +28,14 @@
  #define PFX2(prefix, name) PFX3(prefix, name)
  #define PFX(name)          PFX2(X265_NS, name)
  
-+
 +#define UPFX3(prefix, name) _ ## prefix ## _ ## name
 +#define UPFX2(prefix, name) UPFX3(prefix, name)
-+#define UPFX(name)          UPFX2(X265_NS, name)
 +
  #ifdef __APPLE__
  #define PREFIX 1
++#define UPFX(name)          UPFX2(X265_NS, name)
++#else
++#define UPFX(name)          PFX2(X265_NS, name)
  #endif
+ 
+ #ifdef PREFIX
 diff --git a/source/common/aarch64/pixel-util.S b/source/common/aarch64/pixel-util.S
 index fba9a90d5..49c6b0492 100644
 --- a/source/common/aarch64/pixel-util.S
@@ -27,3 +30,40 @@ index fba9a90d5..49c6b0492 100644
      mov             x4, #0
      mov             x11, #0
      movi            v31.16b, #0
+diff --git a/source/common/threadpool.cpp b/source/common/threadpool.cpp
+index 91e82a24e..e21ae9cd6 100644
+--- a/source/common/threadpool.cpp
++++ b/source/common/threadpool.cpp
+@@ -115,12 +115,6 @@ void WorkerThread::threadMain()
+ {
+     THREAD_NAME("Worker", m_id);
+ 
+-#if _WIN32
+-    SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_BELOW_NORMAL);
+-#else
+-    __attribute__((unused)) int val = nice(10);
+-#endif
+-
+     m_pool.setCurrentThreadAffinity();
+ 
+     sleepbitmap_t idBit = (sleepbitmap_t)1 << m_id;
+@@ -667,9 +661,17 @@ void ThreadPool::getFrameThreadsCount(x265_param* p, int cpuCount)
+     else if (cpuCount >= 32)
+         p->frameNumThreads = (p->sourceHeight > 2000) ? 6 : 5; 
+     else if (cpuCount >= 16)
+-        p->frameNumThreads = 4; 
++#if MACOS && X265_ARCH_ARM64
++        p->frameNumThreads = 16;
++#else
++        p->frameNumThreads = 4;
++#endif
+     else if (cpuCount >= 8)
+-        p->frameNumThreads = 3;
++#if MACOS && X265_ARCH_ARM64
++         p->frameNumThreads = 8;
++#else
++         p->frameNumThreads = 3;
++#endif
+     else if (cpuCount >= 4)
+         p->frameNumThreads = 2;
+     else
