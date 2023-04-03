@@ -55,7 +55,7 @@ configure_build () {
 
 
   #patch for arm64 / neon recognition
-  patch -p1 < $1/x265_quant.patch
+  #patch -p1 < $1/x265_quant.patch
 
   #patch broken build
   git apply $1/x265_arm64_entropyStateBits.patch
