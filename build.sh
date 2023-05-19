@@ -2,7 +2,8 @@
 
 # Option feature set to FALSE if not rewuired and TRUE if required
 ENABLE_FFPLAY=FALSE
-ENABLE_TOPAZ=FALSE
+ENABLE_TOPAZ=False
+ENABLE_AVISYNTHPLUS=TRUE
 
 # set true for dependant features, export those needed in ffmpeg build script
  
@@ -11,16 +12,13 @@ then
     export ENABLE_TOPAZ=TRUE
     echo You have enabled Topaz Video AI support.
     echo This execuatable can not be re-distributed under the terms of the GPL
-    echo and hence is for your private use only.
+    echo and hence is for you private use only.
     echo Using the Topaz Video AI filters requires an activate Topaz Video AI licence.
     echo and install of the Application with the models you wish to use.
-    echo To use the Topaz Video AI filters you must set the environment variable TVAI_MODEL_DIR 
+    echo To use the Topaz Video AI filters you must set the environment variable VEAI_MODEL_DIR 
     echo and log into Topaz using the login commanda
     echo 
-    echo export TVAI_MODEL_DIR="/Applications/Topaz Video AI.app/Contents/Resources/models"
-    echo export TVAI_MODEL_DATA_DIR="/Applications/Topaz Video AI.app/Contents/Resources/models"
-    echo 
-    echo If you have logged out of your Topaz account you can log in using
+    echo export VEAI_MODEL_DIR="/Applications/Topaz Video AI.app/Contents/Resources/models"
     echo out/bin/login topaz_account_email_address topaz_account_password 
 
 fi
@@ -28,6 +26,13 @@ fi
 if [[ "${ENABLE_FFPLAY}" == "TRUE" ]]
 then
     export ENABLE_FFPLAY=TRUE
+fi
+
+if [[ "${ENABLE_AVISYNTHPLUS}" == "TRUE" ]]
+then
+    export ENABLE_AVISYNTHPLUS=TRUE
+    echo "Enabling AviSynthPlus will meaan this binary is not longer staticly built."
+    echo "To use AviSynthPlus you will need to run from the tool/lib directory or a directory with a link to the tool/lib/libavisynth.dylib file"
 fi
 
 # get rid of macports - libiconv
@@ -160,11 +165,6 @@ $SCRIPT_DIR/build-libass.sh "$SCRIPT_DIR" "$WORKING_DIR" "$TOOL_DIR" "$CPUS" "0.
 checkStatus $? "build libass"
 echoDurationInSections $START_TIME
 
-START_TIME=$(currentTimeInSeconds)
-echoSection "compile fdk-aac"
-$SCRIPT_DIR/build-fdk-aac.sh "$SCRIPT_DIR" "$WORKING_DIR" "$TOOL_DIR" "2.0.2" > "$WORKING_DIR/build-fdk-aac.log" 2>&1
-checkStatus $? "build fdk-aac"
-echoDurationInSections $START_TIME
 
 START_TIME=$(currentTimeInSeconds)
 echoSection "compile x265"
@@ -237,14 +237,24 @@ then
     echoDurationInSections $START_TIME
 fi
 
+if [[ "${ENABLE_AVISYNTHPLUS}" == "TRUE" ]]
+then
+    START_TIME=$(currentTimeInSeconds)
+    echoSection "compile AviSythnPlus"
+    $SCRIPT_DIR/build-avisynth.sh "$SCRIPT_DIR" "$WORKING_DIR" "$TOOL_DIR" "$CPUS" "v3.7.2" > "$WORKING_DIR/build-avisynth.log" 2>&1
+    checkStatus $? "build AviSythnPlus"
+    echoDurationInSections $START_TIME
+fi
+
+
 START_TIME=$(currentTimeInSeconds)
 if [[ "${ENABLE_TOPAZ}" == "TRUE" ]]
 then
 echoSection "compile ffmpeg with topaz"
-$SCRIPT_DIR/build-ffmpeg-topaz.sh "$SCRIPT_DIR" "$WORKING_DIR" "$TOOL_DIR" "$OUT_DIR" "$CPUS" "6.0.0.6" > "$WORKING_DIR/build-ffmpeg-topaz.log" 2>&1
+$SCRIPT_DIR/build-ffmpeg-topaz.sh "$SCRIPT_DIR" "$WORKING_DIR" "$TOOL_DIR" "$OUT_DIR" "$CPUS" "5.1.0.24" > "$WORKING_DIR/build-ffmpeg-topaz.log" 2>&1
 else
 echoSection "compile ffmpeg"
-$SCRIPT_DIR/build-ffmpeg.sh "$SCRIPT_DIR" "$WORKING_DIR" "$TOOL_DIR" "$OUT_DIR" "$CPUS" "6.0" > "$WORKING_DIR/build-ffmpeg.log" 2>&1
+$SCRIPT_DIR/build-ffmpeg.sh "$SCRIPT_DIR" "$WORKING_DIR" "$TOOL_DIR" "$OUT_DIR" "$CPUS" "5.1" > "$WORKING_DIR/build-ffmpeg.log" 2>&1
 fi
 
 checkStatus $? "build ffmpeg"
